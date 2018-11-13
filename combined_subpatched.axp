@@ -17,7 +17,7 @@
       <params/>
       <attribs/>
    </obj>
-   <patcher type="patch/patcher" uuid="66644c62-f653-41db-858f-ac867be62717" name="patcher_3" x="462" y="182">
+   <patcher type="patch/patcher" uuid="c20b185c-e2f3-4ae5-acf0-ac2e4172de84" name="patcher_3" x="462" y="182">
       <params/>
       <attribs>
          <combo attributeName="poly" selection="4"/>
@@ -315,7 +315,6 @@ else
             <params/>
             <attribs/>
             <object id="patch/object" uuid="5d04aa87-6c7d-4d5d-a3a9-fcb5dd71b047">
-               <sDescription></sDescription>
                <inlets>
                   <frac32.bipolar name="i1"/>
                </inlets>
@@ -328,7 +327,7 @@ else
                <includes/>
                <code.declaration><![CDATA[//array of launchpad mapping, in reverse row order to work with an offset lookup
 int inVals[64] = {
-112, 113, 114, 115, 116, 117, 118, 119
+112, 113, 114, 115, 116, 117, 118, 119,
  96,  97,  98,  99, 100, 101, 102, 103,
  80,  81,  82,  83,  84,  85,  86,  87,
  64,  65,  66,  67,  68,  69,  70,  71,
@@ -341,22 +340,29 @@ int inVals[64] = {
 int startVal = 32;
 
 int outVal = 0;
-int inVal = 0;]]></code.declaration>
+int inVal = 0;
+int oldInVal = 0;
+int oldOutVal = 0;]]></code.declaration>
                <code.krate><![CDATA[outVal = 0;
 
 //translate inlet val to 0-128 range
 inVal = inlet_i1 + 64;
 
-for(int i=0; i<64; i++)
+if(oldInVal != inVal)
 {
-	if(== inVals[i])
+	for(int i=0; i<64; i++)
 	{
-		outVal = startVal + i;
-		break;
+		if(inVal == inVals[i])
+		{
+			outVal = startVal + i;
+			oldOutVal = outVal - 64;
+			break;
+		}
 	}
 }
 
-outlet_o1 = outVal - 64;]]></code.krate>
+outlet_o1 = oldOutVal;
+oldInVal = inVal;]]></code.krate>
             </object>
          </patchobj>
          <obj type="logic/counter" uuid="7a141ba82230e54e5f5cd12da5dbe5a74ba854a5" name="counter_2" x="630" y="896">
