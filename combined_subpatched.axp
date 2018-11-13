@@ -1,7 +1,7 @@
 <patch-1.0 appVersion="1.0.12">
    <obj type="ctrl/toggle" uuid="42b8134fa729d54bfc8d62d6ef3fa99498c1de99" name="toggle_1" x="434" y="70">
       <params>
-         <bool32.tgl name="b" value="0"/>
+         <bool32.tgl name="b" value="1"/>
       </params>
       <attribs/>
    </obj>
@@ -17,12 +17,54 @@
       <params/>
       <attribs/>
    </obj>
-   <patcher type="patch/patcher" uuid="c20b185c-e2f3-4ae5-acf0-ac2e4172de84" name="patcher_3" x="462" y="182">
+   <patcher type="patch/patcher" uuid="55ac6bb3-91a2-4cb2-88fb-d82235760858" name="patcher_3" x="462" y="182">
       <params/>
       <attribs>
          <combo attributeName="poly" selection="4"/>
       </attribs>
       <subpatch appVersion="1.0.12">
+         <patchobj type="patch/object" uuid="5d04aa87-6c7d-4d5d-a3a9-fcb5dd71b047" name="launchpad translator_" x="1568" y="420">
+            <params/>
+            <attribs/>
+            <object id="patch/object" uuid="5d04aa87-6c7d-4d5d-a3a9-fcb5dd71b047">
+               <inlets>
+                  <frac32.bipolar name="i1"/>
+               </inlets>
+               <outlets>
+                  <frac32.bipolar name="o1"/>
+               </outlets>
+               <displays/>
+               <params/>
+               <attribs/>
+               <includes/>
+               <code.declaration><![CDATA[//array of launchpad mapping, in reverse row order to work with an offset lookup
+int32_t inVals[64] = {
+112, 113, 114, 115, 116, 117, 118, 119,
+ 96,  97,  98,  99, 100, 101, 102, 103,
+ 80,  81,  82,  83,  84,  85,  86,  87,
+ 64,  65,  66,  67,  68,  69,  70,  71,
+ 48,  49,  50,  51,  52,  53,  54,  55,
+ 32,  33,  34,  35,  36,  37,  38,  39,
+ 16,  17,  18,  18,  20,  21,  22,  23,
+  0,   1,   2,   3,   4,   5,   6 ,  7,
+};
+
+int32_t startVal = 32;
+
+int32_t outVal = 0;
+int32_t inVal = 0;
+int32_t oldInVal = 0;
+int32_t oldOutVal = 0;]]></code.declaration>
+               <code.krate><![CDATA[outVal = 0;
+
+//translate inlet val to 0-128 range
+inVal = ((inlet_i1 >>21) - startVal) + 64;
+outVal = inVals[inVal];			
+
+
+outlet_o1 = (outVal -64) << 21;]]></code.krate>
+            </object>
+         </patchobj>
          <obj type="patch/inlet b" uuid="3b0d3eacb5bb978cb05d1372aa2714d5a4790844" name="midi out" x="532" y="434">
             <params/>
             <attribs/>
@@ -326,7 +368,7 @@ else
                <attribs/>
                <includes/>
                <code.declaration><![CDATA[//array of launchpad mapping, in reverse row order to work with an offset lookup
-int inVals[64] = {
+int32_t inVals[64] = {
 112, 113, 114, 115, 116, 117, 118, 119,
  96,  97,  98,  99, 100, 101, 102, 103,
  80,  81,  82,  83,  84,  85,  86,  87,
@@ -337,32 +379,28 @@ int inVals[64] = {
   0,   1,   2,   3,   4,   5,   6 ,  7,
 };
 
-int startVal = 32;
+int32_t startVal = 32;
 
-int outVal = 0;
-int inVal = 0;
-int oldInVal = 0;
-int oldOutVal = 0;]]></code.declaration>
+int32_t outVal = 0;
+int32_t inVal = 0;
+int32_t oldInVal = 0;
+int32_t oldOutVal = 0;]]></code.declaration>
                <code.krate><![CDATA[outVal = 0;
 
 //translate inlet val to 0-128 range
-inVal = inlet_i1 + 64;
+inVal = (inlet_i1 >>21) + 64;
 
-if(oldInVal != inVal)
+for(int32_t i=0; i<64; i++)
 {
-	for(int i=0; i<64; i++)
+	if(inVal == inVals[i])
 	{
-		if(inVal == inVals[i])
-		{
-			outVal = startVal + i;
-			oldOutVal = outVal - 64;
-			break;
-		}
+		outVal = startVal + i;			
+		break;
 	}
 }
 
-outlet_o1 = oldOutVal;
-oldInVal = inVal;]]></code.krate>
+
+outlet_o1 = (outVal -64) << 21;]]></code.krate>
             </object>
          </patchobj>
          <obj type="logic/counter" uuid="7a141ba82230e54e5f5cd12da5dbe5a74ba854a5" name="counter_2" x="630" y="896">
@@ -493,7 +531,7 @@ oldInVal = inVal;]]></code.krate>
             <net>
                <source obj="mux_3" outlet="o"/>
                <dest obj="supersaw_1" inlet="pitch"/>
-               <dest obj="note_1" inlet="note"/>
+               <dest obj="launchpad translator_" inlet="i1"/>
             </net>
             <net>
                <source obj="mux_4" outlet="o"/>
@@ -513,6 +551,10 @@ oldInVal = inVal;]]></code.krate>
                <dest obj="mux_3" inlet="i2"/>
                <dest obj="-_1" inlet="in1"/>
             </net>
+            <net>
+               <source obj="launchpad translator_" outlet="o1"/>
+               <dest obj="note_1" inlet="note"/>
+            </net>
          </nets>
          <settings>
             <subpatchmode>polyphonic</subpatchmode>
@@ -524,10 +566,10 @@ oldInVal = inVal;]]></code.krate>
          </settings>
          <notes><![CDATA[]]></notes>
          <windowPos>
-            <x>-8</x>
-            <y>-8</y>
-            <width>1936</width>
-            <height>1056</height>
+            <x>953</x>
+            <y>0</y>
+            <width>974</width>
+            <height>1047</height>
          </windowPos>
       </subpatch>
    </patcher>
@@ -698,9 +740,9 @@ oldInVal = inVal;]]></code.krate>
    </settings>
    <notes><![CDATA[]]></notes>
    <windowPos>
-      <x>-8</x>
-      <y>-8</y>
-      <width>1936</width>
-      <height>1056</height>
+      <x>-7</x>
+      <y>0</y>
+      <width>974</width>
+      <height>1047</height>
    </windowPos>
 </patch-1.0>
